@@ -13,7 +13,7 @@ It can be used in both frontend and backend.
 
 ### Node.js
 1. Install `hf-mdrd`
-```
+```bash
 npm install hf-mdrd
 ```
 
@@ -33,11 +33,11 @@ import "hf-mdrd/css/hf-mdrd.css";
 ```html
 <html>
   <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.1/css/hf-mdrd.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/css/hf-mdrd.min.css" crossorigin="anonymous">
   </head>
   <body>
     <script type="module" type="text/javascript">
-      import { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.1/browser/hf-mdrd.js';
+      import { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/browser/hf-mdrd.js';
       const html = md_to_html(markdown_text);
     </script>
   </body>
@@ -84,6 +84,26 @@ fn main() {
 
 ### Highlight
 using [highlight.js](https://highlightjs.org/) to handle syntax highlight
+
+#### Supported Language
+- python
+- rust
+- typescript
+- xml
+- html
+- fortran
+- go
+- java
+- javascript
+- json
+- kotlin
+- latex
+- lua
+- markdown
+- bash
+- c
+- cpp
+- css
 
 ### Adding Line Number
 ```rust :setNumber

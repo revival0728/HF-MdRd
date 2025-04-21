@@ -1,7 +1,7 @@
 [package]
 name = "hf-mdrd"
 description = "A markdown renderer written in rust, compiled to wasm."
-repository = "https://github.com/revival0728/mdrd"
+repository = "https://github.com/revival0728/HF-MdRd"
 license = "MIT"
 version = "0.1.0"
 edition = "2024"
