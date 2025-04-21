@@ -37,7 +37,7 @@ import "hf-mdrd/css/hf-mdrd.css";
   </head>
   <body>
     <script type="module" type="text/javascript">
-      import { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/browser/hf-mdrd.js';
+      import { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/browser/hf-mdrd.mjs';
       const html = md_to_html(markdown_text);
     </script>
   </body>
