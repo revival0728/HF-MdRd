@@ -3,6 +3,29 @@ mod test;
 use pulldown_cmark::{TextMergeStream, CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use wasm_bindgen::prelude::*;
 
+const SET_NUMBER_FLAG: &str = ":setNumber";
+const PLAIN_TEXT: &str = "plaintext";
+const CODE_BLOCK_SUPPORTED_LANGUAGES: [&str; 18] = [
+  "python",
+  "rust",
+  "typescript",
+  "xml",
+  "html",
+  "fortran",
+  "go",
+  "java",
+  "javascript",
+  "json",
+  "kotlin",
+  "latex",
+  "lua",
+  "markdown",
+  "bash",
+  "c",
+  "cpp",
+  "css"
+];
+
 fn set_panic_hook() {
   // When the `console_error_panic_hook` feature is enabled, we can call the
   // `set_panic_hook` function at least once during initialization, and then
@@ -37,11 +60,11 @@ extern "C" {
 #[wasm_bindgen(module = "/highlight.js")]
 extern "C" {
   #[wasm_bindgen(js_name = "simpleHighlight")]
-  fn highlightjs_simple_highlight(code: &str, langauge: &str) -> String;
+  fn highlightjs_simple_highlight(code: &str, language: &str) -> String;
 }
 
-fn highlight_code(code: &str, langauge: &str, set_line_number: bool) -> String {
-  let hl_code = highlightjs_simple_highlight(code, langauge);
+fn highlight_code(code: &str, language: &str, set_line_number: bool) -> String {
+  let hl_code = highlightjs_simple_highlight(code, language);
   if !set_line_number {
     return hl_code;
   }
@@ -66,15 +89,23 @@ fn render_katex(katex: &str, display: bool) -> String {
   result
 }
 
+//TODO: use a hash to check if the language is supported
+fn check_language(language: &str) -> bool {
+  for lang in CODE_BLOCK_SUPPORTED_LANGUAGES.iter() {
+    if language == *lang {
+      return true;
+    }
+  }
+  false
+}
+
 #[wasm_bindgen]
 pub fn md_to_html(markdwon_input: &str) -> String {
   set_panic_hook();
 
-  const SET_NUMBER_FLAG: &str = ":setNumber";
-  const PLAIN_TEXT: &str = "plaintext";
   let mut events = Vec::new();
   let mut in_code_block = false;
-  let mut langauge = PLAIN_TEXT.to_string();
+  let mut language = PLAIN_TEXT.to_string();
   let mut set_line_number = false;
   let mut in_heading = false;
   let mut heading_level: HeadingLevel = HeadingLevel::H1;
@@ -98,18 +129,25 @@ pub fn md_to_html(markdwon_input: &str) -> String {
             match code_block_kind {
               CodeBlockKind::Fenced(cow_str) => {
                 in_code_block = true;
-                langauge = PLAIN_TEXT.to_string();
+                language = PLAIN_TEXT.to_string();
                 set_line_number = false;
 
                 let args = cow_str.split_whitespace().collect::<Vec<_>>();
                 let args_len = args.len();
                 if args_len > 0 {
-                  langauge = args[0].to_string();
+                  language = args[0].to_string();
+                  if language.ends_with("=") {
+                    language = language[0..language.len()-1].to_string();
+                    set_line_number |= true;
+                  }
+                  if !check_language(&language) {
+                    language = PLAIN_TEXT.to_string();
+                  }
                 }
                 if args_len > 1 {
-                  set_line_number = args[1] == SET_NUMBER_FLAG;
+                  set_line_number |= args[1] == SET_NUMBER_FLAG;
                 }
-                events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::from(langauge.clone())))));
+                events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::from(language.clone())))));
               },
               CodeBlockKind::Indented => {
                 events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)));
@@ -123,7 +161,7 @@ pub fn md_to_html(markdwon_input: &str) -> String {
       },
       Event::Text(text) => {
         if in_code_block {
-          events.push(Event::Html(CowStr::from(highlight_code(&text, &langauge, set_line_number))));
+          events.push(Event::Html(CowStr::from(highlight_code(&text, &language, set_line_number))));
         } else if in_heading {
           events.push(Event::Text(text.clone()));
           let hc = text.to_string().replace(" ", "-");
