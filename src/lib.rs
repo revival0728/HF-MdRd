@@ -5,6 +5,8 @@ use wasm_bindgen::prelude::*;
 
 const SET_NUMBER_FLAG: &str = ":setNumber";
 const PLAIN_TEXT: &str = "plaintext";
+const SPIOLER: &str = ":::spoiler";
+const CODE_BLOCK_SUPPORTED_LANG_HASH: [u64; 18] = [123185905036052,1913061632,8076364826803074327,7892345,1746666781,28833023648627314,26376,1779112988,8509275548630674707,1780024600,117666871801371,465485235300,7107960,7857689625060903943,1644368152,99,6516835,6517603];
 const CODE_BLOCK_SUPPORTED_LANGUAGES: [&str; 18] = [
   "python",
   "rust",
@@ -44,6 +46,14 @@ fn get_parser_options() -> Options {
   options.insert(Options::ENABLE_MATH);
   options.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
   options
+}
+
+fn hash_lang_name(lang: &str) -> u64 {
+  let mut hash = 0;
+  for c in lang.chars() {
+    hash ^= (hash << 8) + (c as u64);
+  }
+  hash
 }
 
 pub fn md_to_parser(markdwon_input: &str) -> Parser<'_> {
@@ -89,11 +99,11 @@ fn render_katex(katex: &str, display: bool) -> String {
   result
 }
 
-//TODO: use a hash to check if the language is supported
 fn check_language(language: &str) -> bool {
-  for lang in CODE_BLOCK_SUPPORTED_LANGUAGES.iter() {
-    if language == *lang {
-      return true;
+  let hash = hash_lang_name(language);
+  for (idx, &lang_hash ) in CODE_BLOCK_SUPPORTED_LANG_HASH.iter().enumerate() {
+    if lang_hash == hash {
+      return CODE_BLOCK_SUPPORTED_LANGUAGES[idx] == language;
     }
   }
   false
@@ -108,12 +118,21 @@ pub fn md_to_html(markdwon_input: &str) -> String {
   let mut language = PLAIN_TEXT.to_string();
   let mut set_line_number = false;
   let mut in_heading = false;
+  let mut in_spoiler = false;
+  let mut is_spoiler_summary = false;
   let mut heading_level: HeadingLevel = HeadingLevel::H1;
   let iterator = TextMergeStream::new(md_to_parser(markdwon_input));
   for event in iterator {
     match event {
       Event::InlineMath(text) => {
-        events.push(Event::Html(CowStr::from(render_katex(&text, false))));
+        if is_spoiler_summary {
+          is_spoiler_summary = false;
+          events.push(Event::InlineHtml(CowStr::from("<summary>")));
+          events.push(Event::Html(CowStr::from(render_katex(&text, false))));
+          events.push(Event::InlineHtml(CowStr::from("</summary>")));
+        } else {
+          events.push(Event::Html(CowStr::from(render_katex(&text, false))));
+        }
       },
       Event::DisplayMath(text) => {
         events.push(Event::Html(CowStr::from(render_katex(&text, true))));
@@ -168,9 +187,30 @@ pub fn md_to_html(markdwon_input: &str) -> String {
           let heading_tag = format!(r##"<a id="{}" href="#{}"><i class="bi bi-link mdrd-hl"></i></a>"##, hc, hc);
           events.push(Event::Html(CowStr::from(heading_tag)));
         } else {
-          events.push(Event::Text(text));
+          // handle custom :::spoiler tag
+          for line in text.lines() {
+            if line.starts_with(SPIOLER) && !in_spoiler {
+              events.push(Event::InlineHtml(CowStr::from("<details>")));
+              in_spoiler = true;
+              match line.trim_end().split_once(" ") {
+                Some((_, summary)) => {
+                  events.push(Event::Html(CowStr::from(format!("<summary>{}</summary>", summary))));
+                }, 
+                None => {
+                  is_spoiler_summary = true;
+                }
+              };
+            } else if line.starts_with(":::") && in_spoiler {
+              events.push(Event::InlineHtml(CowStr::from("</details>")));
+              in_spoiler = false;
+              is_spoiler_summary = false;
+            } else {
+              events.push(Event::Text(CowStr::from(line.to_owned())));
+              events.push(Event::Text(CowStr::from("\n")));
+            }
+          }
         }
-      }
+      },
       Event::End(tag) => {
         match tag {
           TagEnd::CodeBlock => {
@@ -186,7 +226,14 @@ pub fn md_to_html(markdwon_input: &str) -> String {
         }
       },
       _ => {
-        events.push(event);
+        if is_spoiler_summary {
+          is_spoiler_summary = false;
+          events.push(Event::InlineHtml(CowStr::from("<summary>")));
+          events.push(event);
+          events.push(Event::InlineHtml(CowStr::from("</summary>")));
+        } else {
+          events.push(event);
+        }
       }
     }
   }

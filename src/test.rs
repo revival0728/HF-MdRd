@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-  use std::fs;
+  use core::hash;
+use std::fs;
   use std::path::Path;
   use wasm_bindgen_test::wasm_bindgen_test;
   use crate::{ md_to_html, md_to_parser};
@@ -26,6 +27,22 @@ mod tests {
     
     // Verify file was written successfully
     assert!(Path::new(html_path).exists(), "Output HTML file was not created");
+  }
+
+  #[test]
+  fn get_language_list_hash() {
+    use crate::{hash_lang_name, CODE_BLOCK_SUPPORTED_LANGUAGES};
+    let mut hashes = Vec::new();
+    for lang in CODE_BLOCK_SUPPORTED_LANGUAGES.iter() {
+      let hash = hash_lang_name(lang);
+      hashes.push(hash);
+      println!("Language: {}, Hash: {}", lang, hash);
+    }
+    print!("Hash list: [");
+    for hash  in hashes.iter() {
+      print!("{},", hash);
+    }
+    print!("]");
   }
 
   #[test]

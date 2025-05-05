@@ -33,11 +33,12 @@ import "hf-mdrd/css/hf-mdrd.css";
 ```html
 <html>
   <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/css/hf-mdrd.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.10/css/hf-mdrd.min.css" crossorigin="anonymous">
   </head>
   <body>
     <script type="module" type="text/javascript">
-      import { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.4/browser/hf-mdrd.min.mjs';
+      import init, { md_to_html } from 'https://cdn.jsdelivr.net/npm/hf-mdrd@0.1.10/browser/hf-mdrd.min.mjs';
+      await init();
       const html = md_to_html(markdown_text);
     </script>
   </body>
@@ -45,6 +46,8 @@ import "hf-mdrd/css/hf-mdrd.css";
 ```
 
 ## Basic Syntax
+using [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark/) to handle basic syntax
+
 `Code span`
 
 **Bold**
@@ -112,6 +115,12 @@ fn main() {
 }
 ```
 
+```rust=
+fn main() {
+  println!("hello, world!");
+}
+```
+
 ## Math
 using [katex](https://katex.org/) to handle math expression
 
@@ -120,12 +129,29 @@ Euler Formula: $e^{ix} = cos(x) + isin(x)$
 Euler Formula:
 $$e^{ix} = cos(x) + isin(x)$$
 
-## API
-```ts
-function md_to_html(markdown_content: string): string
-```
+## Spoiler
+:::spoiler
+The
+:::
+
+:::spoiler spoiler
+Content
+:::
+
+:::spoiler `spoiler`
+Inside
+:::
+
+:::spoiler $spoiler$
+Spoiler
+:::
 
 ## Table
 | header | row |
 | ------ | --- |
 | body   | row |
+
+## API
+```ts
+function md_to_html(markdown_content: string): string
+```
